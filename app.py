@@ -1,4 +1,4 @@
-from flask import Flask, render_template, send_from_bytes
+from flask import Flask
 import os
 
 app = Flask(__name__)
@@ -8,7 +8,6 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 @app.route('/')
 def index():
-    # index.html read karke bhejega
     with open(os.path.join(BASE_DIR, 'index.html'), 'r', encoding='utf-8') as f:
         return f.read()
 
