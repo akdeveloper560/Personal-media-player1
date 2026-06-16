@@ -134,7 +134,7 @@ function hideContextMenu() {
 }
 
 // --- PLAYER ENGINE LOGIC ---
-function playTrack(songId) {
+async function playTrack(songId) {
     const track = AppState.allSongsMap.get(songId);
     if (!track) return;
 
@@ -143,16 +143,24 @@ function playTrack(songId) {
     DOM.playerArtist.innerText = track.artist;
     DOM.playerThumbnail.src = track.thumbnail || 'https://via.placeholder.com/150';
 
-    DOM.audioEngine.src = track.source;
-    DOM.audioEngine.play()
-        .then(() => {
-            AppState.isPlaying = true;
-            DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-        })
-        .catch(err => {
-            console.error("Playback error:", err);
-            alert("Is track ka link expire ho gaya h, ek baar fir se search karke play kijiye!");
-        });
+    try {
+        // Backend se audio stream ka direct link fetch karega
+        const response = await fetch(track.source);
+        const streamUrl = await response.json();
+
+        DOM.audioEngine.src = streamUrl;
+        DOM.audioEngine.play()
+            .then(() => {
+                AppState.isPlaying = true;
+                DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            })
+            .catch(err => {
+                console.error("Playback error:", err);
+                alert("Is track ko play nahi kiya ja saka!");
+            });
+    } catch (err) {
+        console.error("Streaming links error:", err);
+    }
 }
 
 function togglePlayPause() {
