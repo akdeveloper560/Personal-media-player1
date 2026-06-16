@@ -1,5 +1,8 @@
 from flask import Flask, request, jsonify, render_template
-from youtubesearchpython import VideosSearch
+import urllib.request
+import urllib.parse
+import json
+import re
 import yt_dlp
 import os
 
@@ -21,24 +24,48 @@ def search():
 
     results = []
     try:
-        # Yeh library bina kisi bot error ke data nikalegi
-        videos_search = VideosSearch(query, limit=5)
-        search_result = videos_search.result()
+        # YouTube ke search page se direct HTML data nikalna safely
+        encoded_search = urllib.parse.quote(query)
+        url = f"https://www.youtube.com/results?search_query={encoded_search}"
+        
+        req = urllib.request.Request(
+            url, 
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'}
+        )
+        
+        with urllib.request.urlopen(req) as response:
+            html = response.read().decode('utf-8')
+            
+        # HTML ke andar se YouTube ka hidden JSON data nikalna regex se
+        json_data_match = re.search(r'ytInitialData\s*=\s*({.+?});', html)
+        if json_data_match:
+            json_str = json_data_match.group(1)
+            data = json.loads(json_str)
+            
+            # JSON parse karke videos nikalna
+            contents = data['contents']['twoColumnSearchResultsRenderer']['primaryContents']['sectionListRenderer']['contents'][0]['itemSectionRenderer']['contents']
+            
+            count = 0
+            for item in contents:
+                if 'videoRenderer' in item and count < 6:
+                    video = item['videoRenderer']
+                    video_id = video.get('videoId')
+                    
+                    # Fallback check thumbnails ke liye
+                    thumb = ""
+                    if 'thumbnails' in video.get('thumbnail', {}):
+                        thumb = video['thumbnail']['thumbnails'][0]['url']
 
-        if 'result' in search_result:
-            for video in search_result['result']:
-                # Har video ka direct play stream link nikalne ke liye yt-dlp backup use karenge
-                video_url = video.get('link')
-                
-                results.append({
-                    'id': video.get('id'),
-                    'title': video.get('title'),
-                    'artist': video.get('channel', {}).get('name', 'Unknown Artist'),
-                    'thumbnail': video.get('thumbnails', [{}])[0].get('url', ''),
-                    'source': f"/api/stream?url={video_url}" # Direct route to stream audio safely
-                })
+                    results.append({
+                        'id': video_id,
+                        'title': video['title']['runs'][0]['text'],
+                        'artist': video['ownerText']['runs'][0]['text'] if 'ownerText' in video else 'Unknown Artist',
+                        'thumbnail': thumb,
+                        'source': f"/api/stream?url=https://www.youtube.com/watch?v={video_id}"
+                    })
+                    count += 1
     except Exception as e:
-        print(f"Search Extraction Error: {e}")
+        print(f"Bulletproof Search Error: {e}")
         return jsonify([])
 
     return jsonify(results)
@@ -60,8 +87,7 @@ def stream_audio():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
             stream_url = info.get('url')
-            # Redirect browser direct to audio stream link
-            return jsonify(stream_url) 
+            return jsonify(stream_url)
     except Exception as e:
         print(f"Streaming error: {e}")
         return jsonify({'error': 'Cannot stream video'}), 500
