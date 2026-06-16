@@ -12,23 +12,29 @@ app = Flask(__name__,
 def index():
     return render_template('index.html')
 
-# Frontend `/api/search` use kar raha hai, toh route bhi wahi hona chahiye
 @app.route('/api/search')
 def search():
     query = request.args.get('q', '')
     if not query:
         return jsonify([])
 
+    # BYPASS OPTIONS: Isse YouTube server par error nahi dega
     ydl_opts = {
         'format': 'bestaudio/best',
         'noplaylist': True,
         'quiet': True,
-        'default_search': 'ytsearch:5', # Top 5 gaane dhoondega
+        'no_warnings': True,
+        'default_search': 'ytsearch:5',
+        'nocheckcertificate': True,
+        'geo_bypass': True,
+        'headers': {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
     }
 
     results = []
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        try:
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(query, download=False)
             if 'entries' in info:
                 for entry in info['entries']:
@@ -38,11 +44,12 @@ def search():
                             'title': entry.get('title'),
                             'artist': entry.get('uploader', 'Unknown Artist'),
                             'thumbnail': entry.get('thumbnail', ''),
-                            'source': entry.get('url') # Naye frontend ke liye 'source' key mapping
+                            'source': entry.get('url')
                         })
-        except Exception as e:
-            print(f"yt-dlp error: {e}")
-            return jsonify({'error': str(e)}), 500
+    except Exception as e:
+        print(f"yt-dlp major error: {e}")
+        # Agar block ho jaye toh khali list bhejenge taaki frontend crash na ho
+        return jsonify([])
 
     return jsonify(results)
 
