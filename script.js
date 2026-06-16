@@ -145,11 +145,9 @@ async function playTrack(songId) {
 
     DOM.sectionTitle.innerText = `Loading audio link for "${track.title}"...`;
 
-    // Hum direct browser se request bhejenge bina Render server ko tang kiye
     const youtubeUrl = `https://www.youtube.com/watch?v=${track.source}`;
     
     try {
-        // Cobalt API ya free serverless stream wrapper jo direct browser me stream link deta h
         const response = await fetch('https://co.wuk.sh/api/json', {
             method: 'POST',
             headers: {
@@ -178,7 +176,6 @@ async function playTrack(songId) {
                     alert("Browser ne stream block kiya, doosra gana try karein!");
                 });
         } else {
-            // Backup client stream link
             DOM.audioEngine.src = `https://musicapi.tech/download?id=${track.source}`;
             DOM.audioEngine.play();
             AppState.isPlaying = true;
@@ -186,13 +183,13 @@ async function playTrack(songId) {
         }
     } catch (err) {
         console.error("Client side fetching failed, trying direct browser player:", err);
-        // Ulti backup link fallback
         DOM.audioEngine.src = `https://api.vevioz.com/api/button/mp3/${track.source}`;
         DOM.audioEngine.play();
         AppState.isPlaying = true;
         DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
     }
 }
+
 
 function togglePlayPause() {
     if (!AppState.currentTrack) return;
