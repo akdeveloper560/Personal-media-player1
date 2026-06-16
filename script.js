@@ -143,24 +143,54 @@ async function playTrack(songId) {
     DOM.playerArtist.innerText = track.artist;
     DOM.playerThumbnail.src = track.thumbnail || 'https://via.placeholder.com/150';
 
-    try {
-        // Backend ke naye API endpoint se secure audio link fetch kar rahe hain
-        const response = await fetch(`/api/stream?id=${encodeURIComponent(track.source)}`);
-        const streamUrl = await response.json();
+    DOM.sectionTitle.innerText = `Loading audio link for "${track.title}"...`;
 
-        DOM.audioEngine.src = streamUrl;
-        DOM.audioEngine.play()
-            .then(() => {
-                AppState.isPlaying = true;
-                DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+    // Hum direct browser se request bhejenge bina Render server ko tang kiye
+    const youtubeUrl = `https://www.youtube.com/watch?v=${track.source}`;
+    
+    try {
+        // Cobalt API ya free serverless stream wrapper jo direct browser me stream link deta h
+        const response = await fetch('https://co.wuk.sh/api/json', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                url: youtubeUrl,
+                audioFormat: 'mp3',
+                isAudioOnly: true
             })
-            .catch(err => {
-                console.error("Playback error:", err);
-                // Agar block issue fir bhi aaye, toh direct link play karne ka try karenge browser pe
-                alert("Playback thoda slow ho sakta h bhai, wait kijiye ya doosra gaana try kijiye!");
-            });
+        });
+
+        const data = await response.json();
+
+        if (data && data.url) {
+            DOM.audioEngine.src = data.url;
+            DOM.audioEngine.play()
+                .then(() => {
+                    AppState.isPlaying = true;
+                    DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+                    DOM.sectionTitle.innerText = `Playing: ${track.title}`;
+                })
+                .catch(err => {
+                    console.error("Playback error:", err);
+                    alert("Browser ne stream block kiya, doosra gana try karein!");
+                });
+        } else {
+            // Backup client stream link
+            DOM.audioEngine.src = `https://musicapi.tech/download?id=${track.source}`;
+            DOM.audioEngine.play();
+            AppState.isPlaying = true;
+            DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        }
     } catch (err) {
-        console.error("Streaming links error:", err);
+        console.error("Client side fetching failed, trying direct browser player:", err);
+        // Ulti backup link fallback
+        DOM.audioEngine.src = `https://api.vevioz.com/api/button/mp3/${track.source}`;
+        DOM.audioEngine.play();
+        AppState.isPlaying = true;
+        DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
     }
 }
 
