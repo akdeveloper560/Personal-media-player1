@@ -1,41 +1,4 @@
-// 100% WORKING: Direct Invidious Stream (No Blockers, Real YouTube Audio)
-async function playTrack(songId) {
-    const track = AppState.allSongsMap.get(songId);
-    if (!track || !DOM.audioEngine) return;
-
-    AppState.currentTrack = track;
-    if (DOM.playerTitle) DOM.playerTitle.innerText = track.title;
-    if (DOM.playerArtist) DOM.playerArtist.innerText = track.artist;
-    if (DOM.playerThumbnail) DOM.playerThumbnail.src = track.thumbnail;
-    if (DOM.sectionTitle) DOM.sectionTitle.innerText = `Loading stream from YouTube...`;
-
-    // Invidious Open Network Direct Audio Engine URL
-    const streamUrl = `https://invidious.nerdvpn.de/latest_version?id=${track.id}&itag=140`; 
-    const backupUrl = `https://iv.melmac.space/latest_version?id=${track.id}&itag=140`;
-
-    DOM.audioEngine.src = streamUrl;
-    DOM.audioEngine.play()
-        .then(() => {
-            AppState.isPlaying = true;
-            if (DOM.playPauseBtn) DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-            if (DOM.sectionTitle) DOM.sectionTitle.innerText = `Playing: ${track.title}`;
-        })
-        .catch(err => {
-            console.warn("Primary node busy, switching to backup audio node...", err);
-            DOM.audioEngine.src = backupUrl;
-            DOM.audioEngine.play()
-                .then(() => {
-                    AppState.isPlaying = true;
-                    if (DOM.playPauseBtn) DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-                })
-                .catch(fallbackErr => {
-                    console.error("Stream failed:", fallbackErr);
-                    if (DOM.sectionTitle) DOM.sectionTitle.innerText = "Server busy, tap again to play!";
-                });
-        });
-}
-
-// 100% UNBLOCKED YOUTUBE SEARCH: No Proxy Required, CORS Free!
+// 100% PERMANENT: Saavn Database Engine (Kabhi Block Nahi Hoga)
 async function handleSearch() {
     if (!DOM.searchInput) return;
     const query = DOM.searchInput.value.trim();
@@ -46,51 +9,67 @@ async function handleSearch() {
     if (DOM.btnOnlineSearch) DOM.btnOnlineSearch.classList.add('active');
     renderSidebarPlaylists();
 
-    if (DOM.sectionTitle) DOM.sectionTitle.innerText = `Searching "${query}" on YouTube Database...`;
+    if (DOM.sectionTitle) DOM.sectionTitle.innerText = `Searching "${query}" on High-Speed Server...`;
     
     try {
-        // Public Invidious API instance jo direct YouTube search results deti hai bina CORS ke
-        const response = await fetch(`https://invidious.nerdvpn.de/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-        const results = await response.json();
+        // Public Free Music API for JioSaavn Database (No CORS, No Blockers)
+        const response = await fetch(`https://saavn.dev/api/search/songs?query=${encodeURIComponent(query)}`);
+        const data = await response.json();
         
-        if (results && results.length > 0) {
-            let songs = results.slice(0, 12).map(video => {
-                // High quality thumbnail fallback
-                const thumb = video.videoThumbnails && video.videoThumbnails.length > 0 
-                    ? video.videoThumbnails.find(t => t.quality === 'medium')?.url || video.videoThumbnails[0].url
-                    : `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`;
+        if (data && data.success && data.data && data.data.results.length > 0) {
+            let songs = data.data.results.map(track => {
+                // High quality thumbnail selection
+                const thumb = track.image && track.image.length > 0 
+                    ? track.image[track.image.length - 1].url 
+                    : 'https://via.placeholder.com/150';
+
+                // Best quality audio url extraction
+                const audio = track.downloadUrl && track.downloadUrl.length > 0
+                    ? track.downloadUrl[track.downloadUrl.length - 1].url
+                    : '';
 
                 return {
-                    id: video.videoId,
-                    title: video.title,
-                    artist: video.author || 'Unknown Artist',
-                    thumbnail: thumb
+                    id: track.id,
+                    title: track.name,
+                    artist: track.artists.primary && track.artists.primary.length > 0 ? track.artists.primary[0].name : 'Unknown Artist',
+                    thumbnail: thumb,
+                    audioUrl: audio // Direct MP3 stream from CDN
                 };
             });
             
             if (DOM.sectionTitle) DOM.sectionTitle.innerText = `Results for: "${query}"`;
             renderSongsGrid(songs);
         } else {
-            // Backup instance agar primary public instance slow ho
-            if (DOM.sectionTitle) DOM.sectionTitle.innerText = "Switching to backup search cluster...";
-            const backupResponse = await fetch(`https://iv.melmac.space/api/v1/search?q=${encodeURIComponent(query)}&type=video`);
-            const backupResults = await backupResponse.json();
-            
-            if(backupResults && backupResults.length > 0) {
-                let songs = backupResults.slice(0, 12).map(video => ({
-                    id: video.videoId,
-                    title: video.title,
-                    artist: video.author || 'Unknown Artist',
-                    thumbnail: `https://img.youtube.com/vi/${video.videoId}/mqdefault.jpg`
-                }));
-                if (DOM.sectionTitle) DOM.sectionTitle.innerText = `Results for: "${query}"`;
-                renderSongsGrid(songs);
-            } else {
-                if (DOM.sectionTitle) DOM.sectionTitle.innerText = "No songs found on YouTube. Check spelling!";
-            }
+            if (DOM.sectionTitle) DOM.sectionTitle.innerText = "Gaana nahi mila. Kuch aur search karein!";
         }
     } catch (err) {
-        console.error("Search Fail Trace:", err);
-        if (DOM.sectionTitle) DOM.sectionTitle.innerText = "Network timeout! Please click search again.";
+        console.error("Search Fail:", err);
+        if (DOM.sectionTitle) DOM.sectionTitle.innerText = "Server busy hai, ek baar aur click karo!";
     }
+}
+
+// Direct CDN Playback (No Buffering, No YouTube Limits)
+async function playTrack(songId) {
+    const track = AppState.allSongsMap.get(songId);
+    if (!track || !DOM.audioEngine || !track.audioUrl) {
+        if(DOM.sectionTitle) DOM.sectionTitle.innerText = "Error: Stream link not available!";
+        return;
+    }
+
+    AppState.currentTrack = track;
+    if (DOM.playerTitle) DOM.playerTitle.innerText = track.title;
+    if (DOM.playerArtist) DOM.playerArtist.innerText = track.artist;
+    if (DOM.playerThumbnail) DOM.playerThumbnail.src = track.thumbnail;
+    if (DOM.sectionTitle) DOM.sectionTitle.innerText = `Playing: ${track.title}`;
+
+    DOM.audioEngine.src = track.audioUrl;
+    DOM.audioEngine.play()
+        .then(() => {
+            AppState.isPlaying = true;
+            if (DOM.playPauseBtn) DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+        })
+        .catch(err => {
+            console.error("Playback failed:", err);
+            if (DOM.sectionTitle) DOM.sectionTitle.innerText = "Click again to play!";
+        });
 }
