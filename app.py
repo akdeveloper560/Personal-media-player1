@@ -1,19 +1,26 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_bytes
 import os
 
-# Current directory ka absolute path nikalne ke liye
-current_dir = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__)
 
-app = Flask(__name__, 
-            template_folder=current_dir, 
-            static_folder=current_dir, 
-            static_url_path='')
+# Root directory ka path jahan saari files hain
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 @app.route('/')
 def index():
-    # Yeh aapki index.html file ko browser mein load karega
-    return render_template('index.html')
+    # index.html read karke bhejega
+    with open(os.path.join(BASE_DIR, 'index.html'), 'r', encoding='utf-8') as f:
+        return f.read()
+
+@app.route('/script.js')
+def script():
+    with open(os.path.join(BASE_DIR, 'script.js'), 'r', encoding='utf-8') as f:
+        return f.read(), 200, {'Content-Type': 'application/javascript'}
+
+@app.route('/style.css')
+def style():
+    with open(os.path.join(BASE_DIR, 'style.css'), 'r', encoding='utf-8') as f:
+        return f.read(), 200, {'Content-Type': 'text/css'}
 
 if __name__ == '__main__':
-    # Local testing ke liye port 5000 par chalega
     app.run(host='0.0.0.0', port=5000, debug=True)
