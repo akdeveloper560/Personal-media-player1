@@ -26,7 +26,6 @@ const DOM = {
     searchBtn: document.getElementById('searchBtn'),
     searchInput: document.getElementById('searchInput'),
     sectionTitle: document.getElementById('sectionTitle'),
-    // New Playlist Elements
     playlistList: document.getElementById('playlistList'),
     customDropdown: document.getElementById('customDropdown'),
     dropdownOptions: document.getElementById('dropdownOptions'),
@@ -57,7 +56,6 @@ function savePlaylistsToStorage() {
 function renderSongsGrid(songs) {
     DOM.songsGrid.innerHTML = '';
     
-    // Agar view search hai toh hi map clear karenge, playlists view me nahi
     if(AppState.currentView === 'search') {
         AppState.allSongsMap.clear();
     }
@@ -72,21 +70,17 @@ function renderSongsGrid(songs) {
         const card = document.createElement('div');
         card.className = 'song-card';
         card.innerHTML = `
-            <div class="card-img"><img src="${song.thumbnail}" alt="thumbnail"></div>
+            <div class="card-img"><img src="${song.thumbnail || 'https://via.placeholder.com/150'}" alt="thumbnail"></div>
             <div class="card-info">
                 <h4>${song.title}</h4>
                 <p>${song.artist}</p>
             </div>
         `;
         
-        // Left click standard play functionality
         card.onclick = (e) => {
-            if (e.target.closest('.card-img') || e.target.closest('.card-info')) {
-                playTrack(song.id);
-            }
+            playTrack(song.id);
         };
 
-        // Right Click (Context Menu) for Playlist Add
         card.oncontextmenu = (e) => {
             e.preventDefault();
             showContextMenu(e, song);
@@ -114,7 +108,7 @@ function renderSidebarPlaylists() {
 function openPlaylistView(name) {
     AppState.currentView = 'playlist';
     AppState.activePlaylistName = name;
-    DOM.btnOnlineSearch.classList.remove('active');
+    if(DOM.btnOnlineSearch) DOM.btnOnlineSearch.classList.remove('active');
     renderSidebarPlaylists();
     
     DOM.sectionTitle.innerText = `Playlist: ${name}`;
@@ -122,17 +116,14 @@ function openPlaylistView(name) {
     renderSongsGrid(playlistSongs);
 }
 
-// --- CONTEXT MENU & MODAL SYSTEM ---
 function showContextMenu(e, song) {
     AppState.selectedSongForMenu = song;
     DOM.customDropdown.style.top = `${e.pageY}px`;
     DOM.customDropdown.style.left = `${e.pageX}px`;
     DOM.customDropdown.classList.add('active');
 
-    // Generate Dropdown Options dynamically
     DOM.dropdownOptions.innerHTML = `<li id="ctx-create-pl"><b>+ Create New Playlist</b></li>`;
     
-    // List existing playlists inside context menu
     Object.keys(AppState.playlists).forEach(plName => {
         DOM.dropdownOptions.innerHTML += `<li class="ctx-add-to-pl" data-name="${plName}">Add to "${plName}"</li>`;
     });
@@ -150,7 +141,7 @@ function playTrack(songId) {
     AppState.currentTrack = track;
     DOM.playerTitle.innerText = track.title;
     DOM.playerArtist.innerText = track.artist;
-    DOM.playerThumbnail.src = track.thumbnail;
+    DOM.playerThumbnail.src = track.thumbnail || 'https://via.placeholder.com/150';
 
     DOM.audioEngine.src = track.source;
     DOM.audioEngine.play()
@@ -160,7 +151,7 @@ function playTrack(songId) {
         })
         .catch(err => {
             console.error("Playback error:", err);
-            alert("Is track ka links stream nahi ho paaya!");
+            alert("Is track ka link expire ho gaya h, ek baar fir se search karke play kijiye!");
         });
 }
 
@@ -196,25 +187,17 @@ function initAudioEngineListeners() {
         DOM.totalTimeLabel.innerText = formatTime(DOM.audioEngine.duration);
     };
 
-    // --- AUTOPLAY LOGIC ADDED HERE ---
     DOM.audioEngine.onended = () => {
-        // Check karenge ki kya user kisi playlist ko dekh/sund raha hai aur wo playlist exist karti hai
         if (AppState.currentView === 'playlist' && AppState.activePlaylistName && AppState.currentTrack) {
             const currentPlaylistSongs = AppState.playlists[AppState.activePlaylistName] || [];
-            
-            // Current chalne wale gaane ka index dhoondhenge playlist array mein
             const currentIndex = currentPlaylistSongs.findIndex(song => song.id === AppState.currentTrack.id);
             
-            // Agar gaana mil jata hai aur uske aage ek aur gaana available hai
             if (currentIndex !== -1 && currentIndex < currentPlaylistSongs.length - 1) {
                 const nextSong = currentPlaylistSongs[currentIndex + 1];
-                console.log(`Autoplay: Playing next song -> ${nextSong.title}`);
-                playTrack(nextSong.id); // Agla gaana automatic play ho jayega
-                return; // Yahin se return ho jao, niche ka default reset code mat chalao
+                playTrack(nextSong.id);
+                return;
             }
         }
-
-        // Default Reset: Agar playlist khatam ho gayi ya normal search view hai toh gaana ruk jayega
         AppState.isPlaying = false;
         DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
         DOM.progressBar.value = 0;
@@ -238,10 +221,11 @@ async function handleSearch() {
 
     AppState.currentView = 'search';
     AppState.activePlaylistName = null;
-    DOM.btnOnlineSearch.classList.add('active');
+    if(DOM.btnOnlineSearch) DOM.btnOnlineSearch.classList.add('active');
     renderSidebarPlaylists();
 
     DOM.sectionTitle.innerText = `Searching online for "${query}"...`;
+    DOM.songsGrid.innerHTML = `<p style="color: var(--text-muted); padding: 20px;">Searching music...</p>`;
     
     try {
         const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
@@ -256,76 +240,73 @@ async function handleSearch() {
 
 // --- INITIALIZATION AND GLOBAL EVENTS ---
 document.addEventListener('DOMContentLoaded', () => {
-    DOM.playPauseBtn.onclick = togglePlayPause;
-    DOM.searchBtn.onclick = handleSearch;
-    DOM.searchInput.onkeypress = (e) => { if(e.key === 'Enter') handleSearch(); };
+    if(DOM.playPauseBtn) DOM.playPauseBtn.onclick = togglePlayPause;
+    if(DOM.searchBtn) DOM.searchBtn.onclick = handleSearch;
+    if(DOM.searchInput) DOM.searchInput.onkeypress = (e) => { if(e.key === 'Enter') handleSearch(); };
     
-    // Online Search Tab switch handle karna
-    DOM.btnOnlineSearch.onclick = () => {
-        AppState.currentView = 'search';
-        DOM.btnOnlineSearch.className = 'active';
-        renderSidebarPlaylists();
-        DOM.sectionTitle.innerText = "Search Anything Online";
-        DOM.songsGrid.innerHTML = '';
-    };
+    if(DOM.btnOnlineSearch) {
+        DOM.btnOnlineSearch.onclick = () => {
+            AppState.currentView = 'search';
+            DOM.btnOnlineSearch.className = 'active';
+            renderSidebarPlaylists();
+            DOM.sectionTitle.innerText = "Search Anything Online";
+            DOM.songsGrid.innerHTML = '';
+        };
+    }
 
-    // Global Click to close context menu
     document.addEventListener('click', (e) => {
-        if (!DOM.customDropdown.contains(e.target)) {
+        if (DOM.customDropdown && !DOM.customDropdown.contains(e.target)) {
             hideContextMenu();
         }
     });
 
-    // Handle Dropdown choices dynamically
-    DOM.customDropdown.addEventListener('click', (e) => {
-        const target = e.target;
-        
-        // 1. New playlist creation trigger from context menu
-        if (target.id === 'ctx-create-pl' || target.closest('#ctx-create-pl')) {
-            hideContextMenu();
-            DOM.modalOverlay.classList.add('active');
-            DOM.playlistInput.focus();
-        }
-        
-        // 2. Existing playlist selection trigger
-        if (target.classList.contains('ctx-add-to-pl')) {
-            const plName = target.getAttribute('data-name');
-            if (AppState.selectedSongForMenu && AppState.playlists[plName]) {
-                // Duplicate check
-                const exists = AppState.playlists[plName].some(s => s.id === AppState.selectedSongForMenu.id);
-                if (!exists) {
-                    AppState.playlists[plName].push(AppState.selectedSongForMenu);
+    if(DOM.customDropdown) {
+        DOM.customDropdown.addEventListener('click', (e) => {
+            const target = e.target;
+            if (target.id === 'ctx-create-pl' || target.closest('#ctx-create-pl')) {
+                hideContextMenu();
+                DOM.modalOverlay.classList.add('active');
+                DOM.playlistInput.focus();
+            }
+            if (target.classList.contains('ctx-add-to-pl')) {
+                const plName = target.getAttribute('data-name');
+                if (AppState.selectedSongForMenu && AppState.playlists[plName]) {
+                    const exists = AppState.playlists[plName].some(s => s.id === AppState.selectedSongForMenu.id);
+                    if (!exists) {
+                        AppState.playlists[plName].push(AppState.selectedSongForMenu);
+                        savePlaylistsToStorage();
+                        alert(`"${AppState.selectedSongForMenu.title}" playlist "${plName}" mein add ho gaya!`);
+                    } else {
+                        alert("Yeh gaana pehle se playlist me h bhai!");
+                    }
+                }
+                hideContextMenu();
+            }
+        });
+    }
+
+    if(DOM.closeModalBtn) DOM.closeModalBtn.onclick = () => DOM.modalOverlay.classList.remove('active');
+    
+    if(DOM.savePlaylistBtn) {
+        DOM.savePlaylistBtn.onclick = () => {
+            const plName = DOM.playlistInput.value.trim();
+            if (plName) {
+                if (!AppState.playlists[plName]) {
+                    AppState.playlists[plName] = [];
+                    if(AppState.selectedSongForMenu) {
+                        AppState.playlists[plName].push(AppState.selectedSongForMenu);
+                    }
                     savePlaylistsToStorage();
-                    alert(`"${AppState.selectedSongForMenu.title}" playlist "${plName}" mein add ho gaya!`);
+                    DOM.playlistInput.value = '';
+                    DOM.modalOverlay.classList.remove('active');
                 } else {
-                    alert("Yeh gaana pehle se playlist me h bhai!");
+                    alert("Is naam ki playlist pehle se bani hui hai!");
                 }
             }
-            hideContextMenu();
-        }
-    });
+        };
+    }
 
-    // Modal Operations
-    DOM.closeModalBtn.onclick = () => DOM.modalOverlay.classList.remove('active');
-    DOM.savePlaylistBtn.onclick = () => {
-        const plName = DOM.playlistInput.value.trim();
-        if (plName) {
-            if (!AppState.playlists[plName]) {
-                AppState.playlists[plName] = []; // Khali array playlist ke liye
-                if(AppState.selectedSongForMenu) {
-                    AppState.playlists[plName].push(AppState.selectedSongForMenu);
-                }
-                savePlaylistsToStorage();
-                DOM.playlistInput.value = '';
-                DOM.modalOverlay.classList.remove('active');
-            } else {
-                alert("Is naam ki playlist pehle se bani hui hai!");
-            }
-        }
-    };
-
-    // Load LocalStorage Data on start
     loadPlaylistsFromStorage();
     initAudioEngineListeners();
-    DOM.audioEngine.volume = DOM.volumeBar.value / 100;
+    if(DOM.volumeBar && DOM.audioEngine) DOM.audioEngine.volume = DOM.volumeBar.value / 100;
 });
