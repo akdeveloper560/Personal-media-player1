@@ -1,3 +1,4 @@
 Flask==3.0.3
 yt-dlp
 Werkzeug==3.0.1
+gunicorn==23.0.0
