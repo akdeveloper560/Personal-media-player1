@@ -134,7 +134,7 @@ function hideContextMenu() {
 }
 
 // --- PLAYER ENGINE LOGIC ---
-async function playTrack(songId) {
+function playTrack(songId) {
     const track = AppState.allSongsMap.get(songId);
     if (!track) return;
 
@@ -143,53 +143,20 @@ async function playTrack(songId) {
     DOM.playerArtist.innerText = track.artist;
     DOM.playerThumbnail.src = track.thumbnail || 'https://via.placeholder.com/150';
 
-    DOM.sectionTitle.innerText = `Loading audio link for "${track.title}"...`;
+    DOM.sectionTitle.innerText = `Playing: ${track.title}`;
 
-    const youtubeUrl = `https://www.youtube.com/watch?v=${track.source}`;
-    
-    try {
-        const response = await fetch('https://co.wuk.sh/api/json', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                url: youtubeUrl,
-                audioFormat: 'mp3',
-                isAudioOnly: true
-            })
-        });
-
-        const data = await response.json();
-
-        if (data && data.url) {
-            DOM.audioEngine.src = data.url;
-            DOM.audioEngine.play()
-                .then(() => {
-                    AppState.isPlaying = true;
-                    DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-                    DOM.sectionTitle.innerText = `Playing: ${track.title}`;
-                })
-                .catch(err => {
-                    console.error("Playback error:", err);
-                    alert("Browser ne stream block kiya, doosra gana try karein!");
-                });
-        } else {
-            DOM.audioEngine.src = `https://musicapi.tech/download?id=${track.source}`;
-            DOM.audioEngine.play();
+    // Direct stream link jo Saavn API se aaya hai use audio engine me daalna
+    DOM.audioEngine.src = track.source;
+    DOM.audioEngine.play()
+        .then(() => {
             AppState.isPlaying = true;
             DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-        }
-    } catch (err) {
-        console.error("Client side fetching failed, trying direct browser player:", err);
-        DOM.audioEngine.src = `https://api.vevioz.com/api/button/mp3/${track.source}`;
-        DOM.audioEngine.play();
-        AppState.isPlaying = true;
-        DOM.playPauseBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
-    }
+        })
+        .catch(err => {
+            console.error("Playback error:", err);
+            alert("Is gaane ko play karne me dikkat hui, doosra try karein!");
+        });
 }
-
 
 function togglePlayPause() {
     if (!AppState.currentTrack) return;
