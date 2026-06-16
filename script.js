@@ -144,8 +144,8 @@ async function playTrack(songId) {
     DOM.playerThumbnail.src = track.thumbnail || 'https://via.placeholder.com/150';
 
     try {
-        // Backend se audio stream ka direct link fetch karega
-        const response = await fetch(track.source);
+        // Backend ke naye API endpoint se secure audio link fetch kar rahe hain
+        const response = await fetch(`/api/stream?id=${encodeURIComponent(track.source)}`);
         const streamUrl = await response.json();
 
         DOM.audioEngine.src = streamUrl;
@@ -156,7 +156,8 @@ async function playTrack(songId) {
             })
             .catch(err => {
                 console.error("Playback error:", err);
-                alert("Is track ko play nahi kiya ja saka!");
+                // Agar block issue fir bhi aaye, toh direct link play karne ka try karenge browser pe
+                alert("Playback thoda slow ho sakta h bhai, wait kijiye ya doosra gaana try kijiye!");
             });
     } catch (err) {
         console.error("Streaming links error:", err);
