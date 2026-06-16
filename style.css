@@ -1,0 +1,360 @@
+:root {
+    --bg-main: #0b0c10;
+    --bg-side: #1a1d24;
+    --bg-card: #151922;
+    --accent-neon: #00e5ff;
+    --text-main: #ffffff;
+    --text-muted: #94a3b8;
+    --player-height: 90px;
+    --sidebar-width: 240px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: sans-serif;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    overflow: hidden;
+    height: 100vh;
+}
+
+.app-container {
+    display: flex;
+    height: calc(100vh - var(--player-height));
+    width: 100%;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bg-side);
+    padding: 25px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.logo {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.neon-text {
+    color: var(--accent-neon);
+}
+
+.menu-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+}
+
+.sidebar ul {
+    list-style: none;
+}
+
+.sidebar ul li {
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-muted);
+}
+
+.sidebar ul li.active {
+    background: rgba(0, 229, 255, 0.1);
+    color: var(--accent-neon);
+}
+
+.main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 30px;
+}
+
+.top-header {
+    margin-bottom: 30px;
+}
+
+.search-bar {
+    display: flex;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 8px 15px;
+    border-radius: 30px;
+    max-width: 400px;
+}
+
+.search-bar input {
+    background: none;
+    border: none;
+    color: white;
+    outline: none;
+    width: 100%;
+    margin-left: 10px;
+}
+
+.btn-search {
+    background: var(--accent-neon);
+    border: none;
+    padding: 6px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.songs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
+}
+
+.song-card {
+    background: var(--bg-card);
+    padding: 15px;
+    border-radius: 12px;
+    cursor: pointer;
+    position: relative;
+}
+
+.card-img {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.card-img img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-info h4 {
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-info p {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* PLAYER BAR STYLE */
+.player-bar {
+    height: var(--player-height);
+    background-color: var(--bg-side);
+    position: fixed;
+    bottom: 0; left: 0; width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+}
+
+.player-song-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 25%;
+}
+
+.static-thumbnail-box {
+    width: 50px; height: 50px; border-radius: 6px; overflow: hidden;
+}
+
+.static-thumbnail-box img {
+    width: 100%; height: 100%; object-fit: cover;
+}
+
+.player-controls-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    width: 45%;
+}
+
+.ctrl-btn.play-main {
+    background: white; color: black;
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; justify-content: center; align-items: center;
+    border: none; cursor: pointer;
+}
+
+.progress-container {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+}
+
+.time-stamp { font-size: 11px; color: var(--text-muted); }
+
+.slider {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    width: 100%; height: 5px;
+    background: rgba(255,255,255,0.1); border-radius: 3px; outline: none;
+    cursor: pointer;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px; height: 12px; border-radius: 50%; background: var(--accent-neon);
+}
+
+.player-right-controls {
+    display: flex; width: 25%; justify-content: flex-end;
+}
+
+.volume-wrapper { display: flex; align-items: center; gap: 10px; }
+
+
+/* MODAL SYSTEM LAYER */
+.modal-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(5px);
+    display: flex; justify-content: center; align-items: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease; z-index: 9999;
+}
+.modal-overlay.active { opacity: 1; pointer-events: auto; }
+.modal-content {
+    background: var(--bg-card); border: 1px solid var(--accent-neon);
+    padding: 25px; border-radius: 12px; width: 320px; text-align: center;
+}
+.modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
+.close-modal-btn { background: none; border: none; color: white; font-size: 20px; cursor: pointer; }
+.modal-body input {
+    width: 100%; padding: 10px; background: #000; border: 1px solid #333;
+    color: white; border-radius: 6px; outline: none; margin-bottom: 15px;
+}
+.btn-save {
+    background: var(--accent-neon); border: none; padding: 10px 20px;
+    font-weight: bold; border-radius: 6px; cursor: pointer; width: 100%;
+}
+
+/* FLOATING PLAYLIST CONTEXT SELECTOR */
+.custom-dropdown {
+    position: absolute; background: #1a1d24; border: 1px solid #333;
+    border-radius: 6px; display: none; z-index: 5000; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+}
+.dropdown-header { font-size: 10px; color: var(--text-muted); padding: 6px 12px; border-bottom: 1px solid #222; text-transform: uppercase; }
+.custom-dropdown ul { list-style: none; }
+.custom-dropdown ul li { color: white; font-size: 13px; }
+.custom-dropdown ul li:hover { background: var(--accent-neon); color: black; }
+
+
+.custom-dropdown.active {
+    display: block;
+}
+.custom-dropdown ul li {
+    padding: 10px 15px;
+    cursor: pointer;
+    color: white;
+    font-size: 13px;
+}
+
+
+
+/* ==========================================
+   RESPONSIVE DESIGN (MEDIA QUERIES)
+   ========================================== */
+
+/* Tablet aur Choti Screens ke liye (Max-width: 768px) */
+@media screen and (max-width: 768px) {
+    :root {
+        --sidebar-width: 70px; /* Sidebar chota ho jayega sirf icons ke liye */
+        --player-height: 110px; /* Mobile player ko thoda bada space chahiye */
+    }
+
+    /* Sidebar text chhupao, sirf icons dikhao */
+    .sidebar {
+        padding: 20px 10px;
+        align-items: center;
+    }
+    .logo span, .menu-title, .sidebar ul li span, .sidebar ul li {
+        font-size: 0;
+        padding: 10px 0;
+        text-align: center;
+    }
+    .logo i, .sidebar ul li i {
+        font-size: 20px;
+        margin: 0;
+    }
+    .sidebar ul li.active {
+        background: transparent;
+        color: var(--accent-neon);
+    }
+
+    /* Main Grid Structure */
+    .main-content {
+        padding: 15px;
+    }
+    .songs-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 12px;
+    }
+    .song-card {
+        padding: 10px;
+    }
+    .card-info h4 {
+        font-size: 12px;
+    }
+
+    /* Player Bar Responsive (3 Columns Layout Matrix) */
+    .player-bar {
+        padding: 10px 15px;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+    .player-song-info {
+        width: 60%; /* Gaane ka naam aur thumbnail clear dikhe */
+    }
+    .player-right-controls {
+        width: 30%; /* Volume section */
+    }
+    .player-controls-wrapper {
+        width: 100%; /* Play bar aur progress line poori width le legi niche shifted hokar */
+        order: 3;
+        margin-top: 8px;
+    }
+    .progress-container {
+        width: 100%;
+    }
+}
+
+/* Mobile Screens ke liye (Max-width: 480px) */
+@media screen and (max-width: 480px) {
+    .search-bar {
+        max-width: 100%; /* Search bar full width ho jaye */
+    }
+    .btn-search {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    .section-title {
+        font-size: 18px;
+    }
+
+    /* Mobile standard font adjustment */
+    .player-song-info .song-text h4 {
+        font-size: 12px;
+        max-width: 120px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    /* Mobile standard Modal pop-up spacing */
+    .modal-content {
+        width: 90%;
+        padding: 20px;
+    }
+}
