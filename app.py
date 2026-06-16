@@ -56,7 +56,7 @@ def search():
                         'title': video['title']['runs'][0]['text'],
                         'artist': video['ownerText']['runs'][0]['text'] if 'ownerText' in video else 'Unknown Artist',
                         'thumbnail': thumb,
-                        'source': video_id  # Ab hum sirf Video ID bhejenge frontend ko
+                        'source': video_id  # Sirf video ID bhej rahe hain
                     })
                     count += 1
     except Exception as e:
@@ -64,40 +64,6 @@ def search():
         return jsonify([])
 
     return jsonify(results)
-
-# Bulletproof Stream Engine: YouTube Server se bachne ke liye Public API Engine
-@app.route('/api/stream')
-def stream_audio():
-    video_id = request.args.get('id', '')
-    if not video_id:
-        return jsonify({'error': 'No Video ID provided'}), 400
-
-    # Invidious public instances ki list jo direct audio URLs deti hain bina kisi bot check ke
-    instances = [
-        f"https://invidious.projectsegfau.lt/api/v1/videos/{video_id}",
-        f"https://yewtu.be/api/v1/videos/{video_id}",
-        f"https://inv.nadeko.net/api/v1/videos/{video_id}"
-    ]
-
-    for api_url in instances:
-        try:
-            req = urllib.request.Request(
-                api_url,
-                headers={'User-Agent': 'Mozilla/5.0'}
-            )
-            with urllib.request.urlopen(req, timeout=5) as response:
-                data = json.loads(response.read().decode('utf-8'))
-                if 'adaptiveFormats' in data:
-                    # Sirf audio stream dhoondna jiska resolution na ho (pure audio)
-                    for fmt in data['adaptiveFormats']:
-                        if 'audio' in fmt.get('type', '') or fmt.get('audioQuality'):
-                            return jsonify(fmt.get('url'))
-        except Exception as e:
-            print(f"Instance failed, trying next: {e}")
-            continue
-
-    # Ulti-fallback agar sab instances down hon, toh direct YouTube audio stream bypass link return karenge client-side playback ke liye
-    return jsonify(f"https://www.youtube.com/watch?v={video_id}")
 
 if __name__ == '__main__':
     app.run(debug=True)
